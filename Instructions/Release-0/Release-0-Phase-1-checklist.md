@@ -2,12 +2,12 @@
 
 ### Checklist
 
-- [ ]  Create the FastAPI application.
+- [x]  Create the FastAPI application.
 - [ ]  Create separate API and worker entry points.
-- [ ]  Add Pydantic configuration models.
-- [ ]  Add environment-specific configuration.
+- [x]  Add Pydantic configuration models.
+- [x]  Add environment-specific configuration.
 - [ ]  Add dependency injection for repositories and adapters.
-- [ ]  Add linting, formatting, typing, and unit-test commands.
+- [x]  Add linting, formatting, typing, and unit-test commands.
 - [ ]  Add pre-commit hooks.
 - [ ]  Add container builds.
 - [ ]  Add health and readiness endpoints.
