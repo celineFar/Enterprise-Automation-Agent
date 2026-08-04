@@ -102,4 +102,3 @@ def test_database_secret_is_not_exposed(shared_environment: None) -> None:
     settings = ApiSettings()
 
     assert "secret" not in repr(settings)
-
