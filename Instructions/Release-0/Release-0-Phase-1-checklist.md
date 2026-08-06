@@ -3,7 +3,7 @@
 ### Checklist
 
 - [x]  Create the FastAPI application.
-- [ ]  Create separate API and worker entry points.
+- [x]  Create separate API and worker entry points.
 - [x]  Add Pydantic configuration models.
 - [x]  Add environment-specific configuration.
 - [ ]  Add dependency injection for repositories and adapters.
