@@ -11,7 +11,7 @@ MIGRATION_MESSAGE ?=
 .PHONY: help init sync sync-frozen lock lock-check hooks format format-check lint \
 	typecheck unit integration test coverage check check-migrations api worker \
 	migrate-up migrate-down migration compose-up compose-down compose-logs \
-	postgres-up build
+	postgres-up postgres-wait build
 
 help: ## Show the available Phase 1 commands.
 	@echo "Release 0 - Phase 1"
@@ -31,6 +31,7 @@ help: ## Show the available Phase 1 commands.
 	@echo "  make api               Start the FastAPI development server"
 	@echo "  make worker            Start the worker process"
 	@echo "  make compose-up        Start the local Compose stack"
+	@echo "  make postgres-up       Start local PostgreSQL and wait until healthy"
 	@echo "  make migrate-up        Apply all database migrations"
 	@echo ""
 	@echo "Build"
@@ -104,10 +105,13 @@ migration: ## Create a migration: make migration MIGRATION_MESSAGE="description"
 	$(UV) run alembic revision --autogenerate -m "$(MIGRATION_MESSAGE)"
 
 compose-up: $(ENV_FILE) ## Start all local services in the background.
-	$(COMPOSE) --env-file $(ENV_FILE) up --build -d
+	$(COMPOSE) --env-file $(ENV_FILE) up --build --detach --wait
 
-postgres-up: $(ENV_FILE) ## Start only the local PostgreSQL service.
-	$(COMPOSE) --env-file $(ENV_FILE) up -d postgres
+postgres-up: $(ENV_FILE) ## Start only local PostgreSQL and wait until it is healthy.
+	$(COMPOSE) --env-file $(ENV_FILE) up --detach --wait postgres
+
+postgres-wait: $(ENV_FILE) ## Wait for PostgreSQL using the application database URL.
+	$(UV) run --env-file $(ENV_FILE) python scripts/wait_for_postgres.py
 
 compose-down: ## Stop the local Compose stack without deleting volumes.
 	$(COMPOSE) --env-file $(ENV_FILE) down
