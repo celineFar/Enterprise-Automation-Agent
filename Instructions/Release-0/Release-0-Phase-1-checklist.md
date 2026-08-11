@@ -12,7 +12,7 @@
 - [ ]  Add container builds.
 - [ ]  Add health and readiness endpoints.
 - [ ]  Add build, commit, image, and environment metadata.
-- [ ]  Add database migration tooling.
+- [x]  Add database migration tooling.
 - [x]  Add local Docker Compose dependencies.
 - [ ]  Add CI validation for migrations.
 - [ ]  Add CI validation for event schemas.

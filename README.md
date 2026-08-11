@@ -27,3 +27,24 @@ make compose-down
 
 The `relay_postgres-data` named volume preserves data between restarts. Removing that volume is
 an explicit destructive operation and is not part of the normal Make targets.
+
+## Database migrations
+
+Schema changes are managed exclusively through Alembic. The API and worker never create tables
+or run migrations during startup.
+
+With local PostgreSQL running, apply or roll back migrations using:
+
+```bash
+make migrate-up
+make migrate-down
+```
+
+Create a revision after changing SQLAlchemy models:
+
+```bash
+make migration MIGRATION_MESSAGE="describe the schema change"
+```
+
+Phase 1 establishes an empty schema baseline. Product tables are introduced by migrations in
+the later identity and durable-data phases.
