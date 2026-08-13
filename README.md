@@ -48,3 +48,12 @@ make migration MIGRATION_MESSAGE="describe the schema change"
 
 Phase 1 establishes an empty schema baseline. Product tables are introduced by migrations in
 the later identity and durable-data phases.
+
+Run the PostgreSQL-backed integration suite on a machine with Docker available:
+
+```bash
+make integration
+```
+
+The suite starts one disposable PostgreSQL container and verifies engine and session access,
+API readiness, worker initialization, lifecycle cleanup, and migration upgrade/downgrade.
