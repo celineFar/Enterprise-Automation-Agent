@@ -3,14 +3,21 @@ from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI, Request
 
+from agent_platform.bootstrap.lifecycle import database_lifespan
 from agent_platform.config.settings import ApiSettings
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(application: FastAPI) -> AsyncIterator[None]:
     """Own resources whose lifetime matches the API process."""
 
-    yield
+    settings: ApiSettings = application.state.settings
+    async with database_lifespan(settings.database) as database:
+        application.state.database = database
+        try:
+            yield
+        finally:
+            del application.state.database
 
 
 def create_app(settings: ApiSettings | None = None) -> FastAPI:
