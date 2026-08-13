@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI, Request
 
+from agent_platform.api.routes.health import router as health_router
 from agent_platform.bootstrap.lifecycle import database_lifespan
 from agent_platform.config.settings import ApiSettings
 
@@ -43,6 +44,7 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
         }
 
     application.include_router(api_router)
+    application.include_router(health_router)
     return application
 
 
