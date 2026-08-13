@@ -10,7 +10,7 @@
 - [x]  Add linting, formatting, typing, and unit-test commands.
 - [ ]  Add pre-commit hooks.
 - [ ]  Add container builds.
-- [ ]  Add health and readiness endpoints.
+- [x]  Add health and readiness endpoints.
 - [ ]  Add build, commit, image, and environment metadata.
 - [x]  Add database migration tooling.
 - [x]  Add local Docker Compose dependencies.
