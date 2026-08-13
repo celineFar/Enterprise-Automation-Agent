@@ -1,6 +1,8 @@
 import importlib
 import sys
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
+from contextlib import asynccontextmanager
+from unittest.mock import Mock
 
 import pytest
 from fastapi import FastAPI
@@ -8,6 +10,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from agent_platform.config.settings import ApiSettings
+from agent_platform.persistence.database import DatabaseRuntime
 
 APP_MODULE = "agent_platform.api.app"
 
@@ -43,13 +46,25 @@ def test_factory_creates_configured_fastapi_application(api_environment: None) -
     assert application.state.settings is settings
 
 
-def test_v1_api_root_exposes_non_secret_runtime_identity(api_environment: None) -> None:
+def test_v1_api_root_exposes_non_secret_runtime_identity(
+    api_environment: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     app_module = importlib.import_module(APP_MODULE)
+    database = Mock(spec=DatabaseRuntime)
+
+    @asynccontextmanager
+    async def fake_database_lifespan(_settings: object) -> AsyncIterator[DatabaseRuntime]:
+        yield database
+
+    monkeypatch.setattr(app_module, "database_lifespan", fake_database_lifespan)
     application = app_module.create_app(ApiSettings())
 
     with TestClient(application) as client:
+        assert application.state.database is database
         response = client.get("/v1")
 
+    assert not hasattr(application.state, "database")
     assert response.status_code == 200
     assert response.json() == {
         "name": "relay-test-api",

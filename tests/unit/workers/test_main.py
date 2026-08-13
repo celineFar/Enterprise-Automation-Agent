@@ -1,12 +1,15 @@
 import asyncio
 import signal
-from collections.abc import Callable, Iterator
+from collections.abc import AsyncIterator, Callable, Iterator
+from contextlib import asynccontextmanager
 from types import FrameType
+from unittest.mock import Mock
 
 import pytest
 from pydantic import ValidationError
 
 from agent_platform.config.settings import WorkerSettings
+from agent_platform.persistence.database import DatabaseRuntime
 from agent_platform.workers import main as worker_main
 
 SignalHandler = Callable[[int, FrameType | None], None] | int
@@ -29,7 +32,18 @@ def worker_environment(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     yield
 
 
-def test_worker_runs_until_shutdown_is_requested(worker_environment: None) -> None:
+def test_worker_runs_until_shutdown_is_requested(
+    worker_environment: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database = Mock(spec=DatabaseRuntime)
+
+    @asynccontextmanager
+    async def fake_database_lifespan(_settings: object) -> AsyncIterator[DatabaseRuntime]:
+        yield database
+
+    monkeypatch.setattr(worker_main, "database_lifespan", fake_database_lifespan)
+
     async def scenario() -> None:
         stop_event = asyncio.Event()
         task = asyncio.create_task(
@@ -47,6 +61,31 @@ def test_worker_runs_until_shutdown_is_requested(worker_environment: None) -> No
         await task
 
         assert task.done()
+
+    asyncio.run(scenario())
+
+
+def test_worker_cancels_tasks_that_exceed_shutdown_grace_period() -> None:
+    cancelled = False
+
+    async def owned_task() -> None:
+        nonlocal cancelled
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            cancelled = True
+            raise
+
+    async def scenario() -> None:
+        task = asyncio.create_task(owned_task())
+        tasks = {task}
+        await asyncio.sleep(0)
+
+        await worker_main.finish_or_cancel_tasks(tasks, timeout_seconds=0)
+
+        assert cancelled
+        assert task.cancelled()
+        assert not tasks
 
     asyncio.run(scenario())
 
