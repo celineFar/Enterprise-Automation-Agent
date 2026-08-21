@@ -19,6 +19,9 @@ target_metadata = Base.metadata
 def database_url() -> str:
     """Load the migration URL from validated, secret-safe runtime settings."""
 
+    configured_url = config.attributes.get("database_url")
+    if isinstance(configured_url, str):
+        return configured_url
     return MigrationSettings().database.url.get_secret_value()
 
 
