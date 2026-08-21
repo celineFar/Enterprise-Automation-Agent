@@ -11,8 +11,7 @@ def test_require_single_head_rejects_divergent_history(
     scripts = Mock()
     scripts.get_heads.return_value = ["head_one", "head_two"]
     monkeypatch.setattr(
-        check_migrations.ScriptDirectory,
-        "from_config",
+        "scripts.check_migrations.ScriptDirectory.from_config",
         lambda _config: scripts,
     )
 
@@ -43,8 +42,8 @@ def test_validate_migrations_checks_round_trip_and_schema_drift(
     monkeypatch.setattr(check_migrations, "require_single_head", lambda _config: "migration_head")
     monkeypatch.setattr(check_migrations, "current_revisions", lambda _url: next(revisions))
     monkeypatch.setattr(check_migrations, "schema_differences", lambda _url: [])
-    monkeypatch.setattr(check_migrations.command, "upgrade", upgrade)
-    monkeypatch.setattr(check_migrations.command, "downgrade", downgrade)
+    monkeypatch.setattr("scripts.check_migrations.command.upgrade", upgrade)
+    monkeypatch.setattr("scripts.check_migrations.command.downgrade", downgrade)
 
     check_migrations.validate_migrations(
         "postgresql+psycopg://relay:secret@localhost/relay",
@@ -69,13 +68,11 @@ def test_validate_migrations_rejects_schema_drift(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setattr(check_migrations, "current_revisions", lambda _url: next(revisions))
     monkeypatch.setattr(check_migrations, "schema_differences", lambda _url: [("add_table",)])
     monkeypatch.setattr(
-        check_migrations.command,
-        "upgrade",
+        "scripts.check_migrations.command.upgrade",
         lambda _config, _revision: None,
     )
     monkeypatch.setattr(
-        check_migrations.command,
-        "downgrade",
+        "scripts.check_migrations.command.downgrade",
         lambda _config, _revision: None,
     )
 
