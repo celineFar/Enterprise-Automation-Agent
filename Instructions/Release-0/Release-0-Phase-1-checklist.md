@@ -11,7 +11,7 @@
 * [x] Create separate API and worker entry points.
 * [x] Add local Docker Compose dependencies.
 * [x] Add database migration tooling.
-* [ ] Add CI validation for migrations.
+* [x] Add CI validation for migrations.
 * [ ] Add dependency injection for repositories and adapters.
 * [x] Add health and readiness endpoints.
 * [ ] Add build, commit, image, and environment metadata.
