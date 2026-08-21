@@ -24,6 +24,7 @@ help: ## Show the available Phase 1 commands.
 	@echo "Quality"
 	@echo "  make format            Format Python sources"
 	@echo "  make check             Run Phase 1 static checks and unit tests"
+	@echo "  make check-migrations  Validate migrations against disposable PostgreSQL"
 	@echo "  make integration       Run tests marked as integration"
 	@echo "  make coverage          Run tests with branch coverage"
 	@echo ""
@@ -86,7 +87,7 @@ coverage: ## Run tests and report branch coverage.
 check-migrations: ## Run migration consistency validation used by CI.
 	$(UV) run python scripts/check_migrations.py
 
-check: format-check lint typecheck unit check-migrations lock-check ## Run the Phase 1 CI checks.
+check: format-check lint typecheck unit lock-check ## Run static checks and unit tests.
 
 api: ## Start the API runtime with reload enabled for local development.
 	$(UV) run uvicorn agent_platform.api.app:app --host 0.0.0.0 --port 8000 --reload

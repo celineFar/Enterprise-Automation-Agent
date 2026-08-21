@@ -57,3 +57,15 @@ make integration
 
 The suite starts one disposable PostgreSQL container and verifies engine and session access,
 API readiness, worker initialization, lifecycle cleanup, and migration upgrade/downgrade.
+
+CI and developers can run the shared migration-chain validator against an empty disposable
+database configured through `AGENT_DATABASE__URL`:
+
+```bash
+make check-migrations
+```
+
+The validator intentionally refuses a database with an applied revision. It upgrades to the
+single Alembic head, downgrades to base, re-applies the head, and checks for schema drift. Do not
+point this destructive validation command at a persistent development, staging, or production
+database.
