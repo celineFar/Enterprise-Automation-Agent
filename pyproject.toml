@@ -50,6 +50,7 @@ packages = ["src/agent_platform"]
 
 [tool.pytest.ini_options]
 minversion = "8.4"
+pythonpath = ["."]
 addopts = [
     "--strict-config",
     "--strict-markers",
