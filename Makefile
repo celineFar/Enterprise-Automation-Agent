@@ -8,7 +8,8 @@ MIGRATION_MESSAGE ?=
 
 .DEFAULT_GOAL := help
 
-.PHONY: help init sync sync-frozen lock lock-check hooks format format-check lint \
+.PHONY: help init sync sync-frozen lock lock-check hooks hooks-check hooks-validate \
+	format format-check lint \
 	typecheck unit integration test coverage check check-migrations api worker \
 	migrate-up migrate-down migration compose-up compose-down compose-logs \
 	postgres-up postgres-wait build
@@ -20,10 +21,12 @@ help: ## Show the available Phase 1 commands.
 	@echo "  make init              Create .env, sync dependencies, install hooks"
 	@echo "  make sync              Resolve and sync all dependency groups"
 	@echo "  make sync-frozen       Sync exactly from uv.lock (CI/reproducible builds)"
+	@echo "  make hooks             Install Git pre-commit hooks"
 	@echo ""
 	@echo "Quality"
 	@echo "  make format            Format Python sources"
 	@echo "  make check             Run Phase 1 static checks and unit tests"
+	@echo "  make hooks-check       Run every pre-commit hook against the repository"
 	@echo "  make check-migrations  Validate migrations against disposable PostgreSQL"
 	@echo "  make integration       Run tests marked as integration"
 	@echo "  make coverage          Run tests with branch coverage"
@@ -59,6 +62,12 @@ lock-check: ## Verify that uv.lock matches pyproject.toml.
 hooks: ## Install the repository's pre-commit hooks.
 	$(UV) run pre-commit install
 
+hooks-check: ## Run all configured pre-commit hooks against the repository.
+	$(UV) run pre-commit run --all-files
+
+hooks-validate: ## Validate pre-commit configuration without running hooks.
+	$(UV) run pre-commit validate-config
+
 format: ## Format source and test files.
 	$(UV) run ruff format src tests migrations scripts
 	$(UV) run ruff check --fix src tests migrations scripts
@@ -87,7 +96,7 @@ coverage: ## Run tests and report branch coverage.
 check-migrations: ## Run migration consistency validation used by CI.
 	$(UV) run python scripts/check_migrations.py
 
-check: format-check lint typecheck unit lock-check ## Run static checks and unit tests.
+check: hooks-validate format-check lint typecheck unit lock-check ## Run static checks and unit tests.
 
 api: ## Start the API runtime with reload enabled for local development.
 	$(UV) run uvicorn agent_platform.api.app:app --host 0.0.0.0 --port 8000 --reload

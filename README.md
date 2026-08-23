@@ -69,3 +69,24 @@ The validator intentionally refuses a database with an applied revision. It upgr
 single Alembic head, downgrades to base, re-applies the head, and checks for schema drift. Do not
 point this destructive validation command at a persistent development, staging, or production
 database.
+
+## Pre-commit hooks
+
+Install the repository hooks after syncing development dependencies:
+
+```bash
+make hooks
+```
+
+The commit-time checks cover file hygiene, YAML and TOML syntax, GitHub Actions workflows, Ruff
+formatting and linting, and strict mypy typing. Ruff may update staged Python files; review and
+stage those changes before committing again.
+
+Run the complete hook set manually with:
+
+```bash
+make hooks-check
+```
+
+PostgreSQL integration tests, migration round trips, container builds, and security scans remain
+CI checks because they are too expensive or infrastructure-dependent for every commit.
