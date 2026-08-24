@@ -12,7 +12,7 @@
 * [x] Add local Docker Compose dependencies.
 * [x] Add database migration tooling.
 * [x] Add CI validation for migrations.
-* [ ] Add dependency injection for repositories and adapters.
+* [x] Add dependency injection for repositories and adapters.
 * [x] Add health and readiness endpoints.
 * [ ] Add build, commit, image, and environment metadata.
 * [ ] Add container builds.

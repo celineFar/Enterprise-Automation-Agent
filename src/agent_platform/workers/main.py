@@ -5,9 +5,10 @@ from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
 from types import FrameType
 
+from agent_platform.bootstrap.application import create_application_container
+from agent_platform.bootstrap.container import ApplicationContainer
 from agent_platform.bootstrap.lifecycle import database_lifespan
 from agent_platform.config.settings import WorkerSettings
-from agent_platform.persistence.database import DatabaseRuntime
 
 _SHUTDOWN_SIGNALS = (signal.SIGINT, signal.SIGTERM)
 
@@ -16,7 +17,7 @@ _SHUTDOWN_SIGNALS = (signal.SIGINT, signal.SIGTERM)
 class WorkerResources:
     """Resources and background tasks owned by one worker process."""
 
-    database: DatabaseRuntime
+    container: ApplicationContainer[WorkerSettings]
     tasks: set[asyncio.Task[None]] = field(default_factory=set)
 
 
@@ -42,7 +43,9 @@ async def worker_lifespan(settings: WorkerSettings) -> AsyncIterator[WorkerResou
     """Own resources whose lifetime matches the worker process."""
 
     async with database_lifespan(settings.database) as database:
-        resources = WorkerResources(database=database)
+        resources = WorkerResources(
+            container=create_application_container(settings, database),
+        )
         try:
             yield resources
         finally:
