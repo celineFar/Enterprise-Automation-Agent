@@ -28,10 +28,11 @@ def test_api_starts_reports_ready_and_disposes_engine(
     application = app_module.create_app(api_settings)
 
     with TestClient(application) as client:
-        assert hasattr(application.state, "database")
+        assert application.state.container.database is runtime
+        assert not hasattr(application.state, "database")
         response = client.get("/ready")
 
     assert response.status_code == 200
     assert response.json() == {"status": "ready"}
-    assert not hasattr(application.state, "database")
+    assert not hasattr(application.state, "container")
     assert closed_connections >= 1

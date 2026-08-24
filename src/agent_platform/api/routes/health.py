@@ -1,9 +1,10 @@
-from typing import Literal
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, Request, status
+from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 
+from agent_platform.api.dependencies import get_database
 from agent_platform.persistence.database import DatabaseRuntime
 
 router = APIRouter(include_in_schema=False)
@@ -18,11 +19,10 @@ async def health() -> dict[str, Literal["healthy"]]:
 
 @router.get("/ready")
 async def readiness(
-    request: Request,
+    database: Annotated[DatabaseRuntime, Depends(get_database)],
 ) -> JSONResponse:
     """Report whether the API's required PostgreSQL dependency is available."""
 
-    database: DatabaseRuntime = request.app.state.database
     try:
         await database.check_connection()
     except SQLAlchemyError:
