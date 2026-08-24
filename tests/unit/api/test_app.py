@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
+from agent_platform.bootstrap.container import ApplicationContainer
 from agent_platform.config.settings import ApiSettings
 from agent_platform.persistence.database import DatabaseRuntime
 
@@ -52,19 +53,32 @@ def test_v1_api_root_exposes_non_secret_runtime_identity(
 ) -> None:
     app_module = importlib.import_module(APP_MODULE)
     database = Mock(spec=DatabaseRuntime)
+    container_present_during_database_cleanup: bool | None = None
 
     @asynccontextmanager
     async def fake_database_lifespan(_settings: object) -> AsyncIterator[DatabaseRuntime]:
-        yield database
+        nonlocal container_present_during_database_cleanup
+        try:
+            yield database
+        finally:
+            container_present_during_database_cleanup = hasattr(
+                application.state,
+                "container",
+            )
 
     monkeypatch.setattr(app_module, "database_lifespan", fake_database_lifespan)
     application = app_module.create_app(ApiSettings())
 
     with TestClient(application) as client:
-        assert application.state.database is database
+        container = application.state.container
+        assert isinstance(container, ApplicationContainer)
+        assert container.settings is application.state.settings
+        assert container.database is database
+        assert not hasattr(application.state, "database")
         response = client.get("/v1")
 
-    assert not hasattr(application.state, "database")
+    assert not hasattr(application.state, "container")
+    assert container_present_during_database_cleanup is False
     assert response.status_code == 200
     assert response.json() == {
         "name": "relay-test-api",

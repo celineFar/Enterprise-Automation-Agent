@@ -1,9 +1,13 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Annotated
 
-from fastapi import APIRouter, FastAPI, Request
+from fastapi import APIRouter, Depends, FastAPI
 
+from agent_platform.api.dependencies import get_container
 from agent_platform.api.routes.health import router as health_router
+from agent_platform.bootstrap.application import create_application_container
+from agent_platform.bootstrap.container import ApplicationContainer
 from agent_platform.bootstrap.lifecycle import database_lifespan
 from agent_platform.config.settings import ApiSettings
 
@@ -14,11 +18,11 @@ async def lifespan(application: FastAPI) -> AsyncIterator[None]:
 
     settings: ApiSettings = application.state.settings
     async with database_lifespan(settings.database) as database:
-        application.state.database = database
+        application.state.container = create_application_container(settings, database)
         try:
             yield
         finally:
-            del application.state.database
+            del application.state.container
 
 
 def create_app(settings: ApiSettings | None = None) -> FastAPI:
@@ -35,8 +39,10 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
     api_router = APIRouter(prefix="/v1")
 
     @api_router.get("", include_in_schema=False)
-    async def api_root(request: Request) -> dict[str, str]:
-        runtime_settings: ApiSettings = request.app.state.settings
+    async def api_root(
+        container: Annotated[ApplicationContainer[ApiSettings], Depends(get_container)],
+    ) -> dict[str, str]:
+        runtime_settings = container.settings
         return {
             "name": runtime_settings.application.name,
             "version": runtime_settings.build.version,
