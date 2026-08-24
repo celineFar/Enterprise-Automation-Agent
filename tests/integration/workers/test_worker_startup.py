@@ -5,6 +5,8 @@ from contextlib import asynccontextmanager
 import pytest
 from sqlalchemy import event
 
+from agent_platform.bootstrap.application import create_application_container
+from agent_platform.bootstrap.container import ApplicationContainer
 from agent_platform.bootstrap.lifecycle import database_lifespan as original_database_lifespan
 from agent_platform.config.settings import DatabaseSettings, WorkerSettings
 from agent_platform.persistence.database import DatabaseRuntime
@@ -18,6 +20,7 @@ def test_worker_initializes_postgres_and_disposes_engine(
 ) -> None:
     connected = asyncio.Event()
     closed_connections = 0
+    containers: list[ApplicationContainer[WorkerSettings]] = []
 
     @asynccontextmanager
     async def observed_lifespan(
@@ -38,7 +41,16 @@ def test_worker_initializes_postgres_and_disposes_engine(
         nonlocal closed_connections
         closed_connections += 1
 
+    def observed_composition(
+        settings: WorkerSettings,
+        database: DatabaseRuntime,
+    ) -> ApplicationContainer[WorkerSettings]:
+        container = create_application_container(settings, database)
+        containers.append(container)
+        return container
+
     monkeypatch.setattr(worker_main, "database_lifespan", observed_lifespan)
+    monkeypatch.setattr(worker_main, "create_application_container", observed_composition)
 
     async def scenario() -> None:
         stop_event = asyncio.Event()
@@ -51,6 +63,8 @@ def test_worker_initializes_postgres_and_disposes_engine(
         )
         await asyncio.wait_for(connected.wait(), timeout=10)
         assert not worker.done()
+        assert len(containers) == 1
+        assert containers[0].settings is worker_settings
 
         stop_event.set()
         await asyncio.wait_for(worker, timeout=10)

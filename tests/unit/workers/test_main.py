@@ -8,6 +8,7 @@ from unittest.mock import Mock
 import pytest
 from pydantic import ValidationError
 
+from agent_platform.bootstrap.container import ApplicationContainer
 from agent_platform.config.settings import WorkerSettings
 from agent_platform.persistence.database import DatabaseRuntime
 from agent_platform.workers import main as worker_main
@@ -61,6 +62,28 @@ def test_worker_runs_until_shutdown_is_requested(
         await task
 
         assert task.done()
+
+    asyncio.run(scenario())
+
+
+def test_worker_lifespan_composes_process_container(
+    worker_environment: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = WorkerSettings()
+    database = Mock(spec=DatabaseRuntime)
+
+    @asynccontextmanager
+    async def fake_database_lifespan(_settings: object) -> AsyncIterator[DatabaseRuntime]:
+        yield database
+
+    monkeypatch.setattr(worker_main, "database_lifespan", fake_database_lifespan)
+
+    async def scenario() -> None:
+        async with worker_main.worker_lifespan(settings) as resources:
+            assert isinstance(resources.container, ApplicationContainer)
+            assert resources.container.settings is settings
+            assert resources.container.database is database
 
     asyncio.run(scenario())
 
