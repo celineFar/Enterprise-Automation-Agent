@@ -16,6 +16,13 @@ from agent_platform.workers import main as worker_main
 SignalHandler = Callable[[int, FrameType | None], None] | int
 
 
+class ConsumerProbe:
+    """Represent a future consumer receiving one narrow constructor dependency."""
+
+    def __init__(self, database: DatabaseRuntime) -> None:
+        self.database = database
+
+
 @pytest.fixture
 def worker_environment(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     values = {
@@ -84,6 +91,29 @@ def test_worker_lifespan_composes_process_container(
             assert isinstance(resources.container, ApplicationContainer)
             assert resources.container.settings is settings
             assert resources.container.database is database
+
+    asyncio.run(scenario())
+
+
+def test_worker_boundary_constructor_injects_narrow_consumer_dependency(
+    worker_environment: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = WorkerSettings()
+    database = Mock(spec=DatabaseRuntime)
+
+    @asynccontextmanager
+    async def fake_database_lifespan(_settings: object) -> AsyncIterator[DatabaseRuntime]:
+        yield database
+
+    monkeypatch.setattr(worker_main, "database_lifespan", fake_database_lifespan)
+
+    async def scenario() -> None:
+        async with worker_main.worker_lifespan(settings) as resources:
+            consumer = ConsumerProbe(resources.container.database)
+
+            assert consumer.database is database
+            assert not hasattr(consumer, "container")
 
     asyncio.run(scenario())
 
