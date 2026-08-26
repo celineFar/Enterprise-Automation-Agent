@@ -103,3 +103,4 @@ def test_module_exposes_application_entry_point(api_environment: None) -> None:
     app_module = importlib.import_module(APP_MODULE)
 
     assert isinstance(app_module.app, FastAPI)
+    assert not hasattr(app_module.app.state, "container")
